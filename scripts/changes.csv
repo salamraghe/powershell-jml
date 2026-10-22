@@ -1,0 +1,3 @@
+SamAccountName,Action,OldGroup,NewGroup
+jsmith,Move,Finance-Users,Lab-Access-Group
+mlee,Leave,Lab-Access-Group
