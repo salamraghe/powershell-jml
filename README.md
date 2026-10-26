@@ -1,103 +1,88 @@
 # PowerShell Joiner-Mover-Leaver Automation (Active Directory)
 
-Hands-on lab, October 2026 (done Oct 19). This automates what I did by hand in my [AD user lifecycle lab](https://github.com/salamraghe/ad-user-lifecycle) on Sep 18.
+Hands-on lab, Oct 2026. This automates what I did by hand in my [AD user lifecycle lab](https://github.com/salamraghe/ad-user-lifecycle).
 
-## What this is and why it matters
+Three everyday access tickets: a joiner (new hire), a mover (role change) and a leaver (offboarding). HR-style CSV files go in, and PowerShell creates, moves or disables the accounts in Active Directory, the same way every time.
 
-I automated the three everyday access tickets in Active Directory: a **joiner** (new hire), a **mover** (role change) and a **leaver** (offboarding). HR-style CSV files go in, and PowerShell builds, moves or disables the accounts.
+## What I built
 
-In my own words: with a script, HR passes me a CSV once, I run it, and every user is built the same way without clicking, in a couple of minutes. It's faster, has fewer mistakes, and every user is set up the same way.
+- **Joiner:** `joiners.csv` → script creates Jane Smith (`jsmith`) and Mike Lee (`mlee`) in `OU=LabUsers` and adds each to a starting group. The temp password is prompted as a secure string, never stored in a file.
+- **Mover / leaver:** [`scripts/changes.csv`](scripts/changes.csv) + [`scripts/mover-leaver.ps1`](scripts/mover-leaver.ps1). The old group is removed first, then the mover gets the new group or the leaver is disabled.
+- Verified in ADUC: jsmith moved from Finance-Users to Lab-Access-Group, and mlee was disabled with only Domain Users left.
 
-For the mover and leaver: my script moved Jane by taking her out of Finance, so she has no more access there, and putting her in her new role's Lab-Access-Group. For Mike, I took him out of Lab-Access-Group and disabled his account, because he left the company, might have had a breach, or is on a 3–4 month break. The old group is removed first so access doesn't pile up (privilege creep) and least privilege holds.
+## What I learned
+
+In my own words:
+
+> "With a script, HR passes me a CSV once, I run it, and every user is built the same way without clicking, in a couple of minutes. It's faster, has fewer mistakes, and every user is set up the same way."
+
+> "My script moved Jane by taking her out of Finance, so no more access there, and putting her in her new role's Lab-Access-Group. For Mike, I took him out of Lab-Access-Group and disabled his account, because he left the company, or might have had a breach, or is on a 3-4 month break."
+
+*Coach-written at his request:* the old group is removed first to prevent privilege creep and keep least privilege.
+
+*Interview line (coach-written at his request, from his one-page IAM Labs doc):*
+
+> "HR gives me one CSV, I run my joiner script, and every user is built the same way in a couple of minutes with fewer mistakes. My mover/leaver script takes the old group off first, adds the new one, and disables leavers, and I check every result in AD because the script can print 'Created' even when it failed."
+
+## Key screenshots
+
+![](key/01-joiners-csv.png)
+*Joiners CSV lists each new hire's name, username and starting group.*
+
+![](key/02-joiner-script.png)
+*PowerShell script reads the CSV, creates AD users and adds groups.*
+
+![](key/03-first-run-error.png)
+*Error I hit on the first run, which I debugged and fixed.*
+
+![](key/04-joiner-run-success.png)
+*Fixed script created both users and added them to their groups.*
+
+![](key/05-mover-leaver-script-output.png)
+*Mover and leaver script moved jsmith and disabled mlee from a CSV.*
+
+![](key/06-leaver-mlee-disabled.png)
+*Active Directory shows leaver Mike Lee's account disabled after the script ran.*
+
+![](key/07-mover-jsmith-groups-after.png)
+*Mover jsmith after the move: Lab-Access-Group added, Finance-Users gone (before shot is in Full proof).*
+
+![](key/08-leaver-groups-removed.png)
+*Leaver mlee is left with only Domain Users after group removal.*
 
 ## Environment
 
 | Item | Value |
 | --- | --- |
 | Domain controller | ADDC01 (Windows Server VM in VirtualBox) |
-| Domain | `lab.local` |
-| OU | `LabUsers` |
+| Domain / OU | `lab.local` / `LabUsers` |
 | Tool | Windows PowerShell ISE (Administrator), ActiveDirectory module |
 | Groups | `Finance-Users`, `Lab-Access-Group` |
 | Users | Jane Smith (`jsmith`), Mike Lee (`mlee`) |
 
-## Steps
+## What broke / issues I fixed
 
-### 1. Open PowerShell ISE as Administrator on the DC
+- **Typo `$u.uName`.** Fixed the property name.
+- **Missing `-SamAccountName` value:** `New-ADUser : Missing an argument for parameter 'SamAccountName'`, so `Add-ADGroupMember` couldn't find the users. Added `$u.SamAccountName`.
+- **Typed the PS prompt as a command** (`C:\Users\Administrator>` not recognized). Ran the script path on its own.
+- **`$c.NewGroup` instead of `$c.OldGroup`** on the Remove line. I caught it in review before running.
+- **Lesson:** `Write-Host` printed "Created" even when `New-ADUser` failed. A success message isn't proof, so I always verify in ADUC.
 
-![ISE open](screenshots/01-ise-admin-open.png)
+## Gaps
 
-### 2. Joiner CSV (what HR would send)
+- Two users, one lab domain. No error handling or logging in the script yet. The joiner script is shown in screenshots only (line 5 is cut off on screen), so it isn't retyped as a file.
+- The VM taskbar clock is native to the screenshots; nothing was added. Background browser content was blacked out.
 
-[`scripts/joiners.csv`](scripts/joiners.csv)
+<details><summary>Full proof (all screenshots)</summary>
 
-![joiners.csv](screenshots/02-joiners-csv.png)
+![](full-proof/01-ise-admin-open.png)
 
-### 3. Joiner script
+![](full-proof/05-first-run-error-b.png)
 
-For each row: prompt for a temp password (as a secure string, never typed into the file), create the user in `OU=LabUsers`, add them to their group, print a result.
+![](full-proof/07-jsmith-memberof.png)
 
-![Joiner script](screenshots/03-joiner-script.png)
+![](full-proof/08-labusers-list.png)
 
-### 4. First run failed (see "What broke" below)
+![](full-proof/09-changes-csv.png)
 
-![First run error](screenshots/04-first-run-error-a.png)
-![First run error, continued](screenshots/05-first-run-error-b.png)
-
-### 5. Fixed run: both users created and grouped
-
-`Created jsmith and added to Finance-Users` / `Created mlee and added to Lab-Access-Group`
-
-![Joiner success](screenshots/06-joiner-success.png)
-
-Checked in ADUC: Jane is in Finance-Users, and both users are in LabUsers.
-
-![jsmith Member Of](screenshots/07-jsmith-memberof.png)
-![LabUsers list](screenshots/08-labusers-list.png)
-
-### 6. Mover / leaver CSV
-
-[`scripts/changes.csv`](scripts/changes.csv): `jsmith` moves from Finance-Users to Lab-Access-Group; `mlee` leaves.
-
-![changes.csv](screenshots/09-changes-csv.png)
-
-### 7. Mover / leaver script and output
-
-[`scripts/mover-leaver.ps1`](scripts/mover-leaver.ps1): remove the old group first, then add the new group (Move) or disable the account (Leave).
-
-Output: `Moved jsmith to Lab-Access-Group` / `Disabled mlee`
-
-![Mover/leaver script and output](screenshots/10-mover-leaver-script-and-output.png)
-
-### 8. Verified in ADUC
-
-![LabUsers after](screenshots/11-labusers-mlee-disabled.png)
-
-Jane after the move: only Domain Users + Lab-Access-Group (Finance-Users gone).
-
-![jsmith after move](screenshots/13-jsmith-memberof-after-move.png)
-
-Mike (`mlee`) after leaving: removed from Lab-Access-Group (only Domain Users left) and the account disabled.
-
-![mlee after leave](screenshots/14-mlee-memberof-after-leave.png)
-
-## What broke and how I fixed it
-
-- **Typo `$u.uName`** in the script. Fixed the property name.
-- **Missing `-SamAccountName` value**: `New-ADUser : Missing an argument for parameter 'SamAccountName'`, so `Add-ADGroupMember` then couldn't find `jsmith` / `mlee`. Added `$u.SamAccountName`.
-- **Typed the PS prompt as a command** (`C:\Users\Administrator>` is not recognized). Ran the script path on its own.
-- **`$c.NewGroup` instead of `$c.OldGroup`** on the Remove line. Caught it in review before running.
-- **Lesson:** `Write-Host` printed "Created" even when `New-ADUser` failed. A success message in a script isn't proof, so I always verify in ADUC.
-
-## Skills shown
-
-- **IAM Support:** joiner/mover/leaver tickets in Active Directory, group-based access, disabling leavers
-- **IAM Engineer:** bulk provisioning with PowerShell + CSV, repeatable and consistent account builds
-- **PAM / least privilege:** removing old access on role change to stop privilege creep; no passwords stored in scripts or files
-- Troubleshooting PowerShell errors and verifying results in ADUC
-
-## Notes
-
-- Screenshot #12 is only a numbering gap; nothing is missing.
-- The joiner script is shown in the screenshots only; line 5 is cut off on screen, so I didn't retype it as a file.
-- Some screenshots show the VM's taskbar clock; nothing was edited onto them. A background browser bar was blacked out in one shot (07).
+</details>
