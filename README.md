@@ -18,9 +18,9 @@ In my own words:
 
 > "My script moved Jane by taking her out of Finance, so no more access there, and putting her in her new role's Lab-Access-Group. For Mike, I took him out of Lab-Access-Group and disabled his account, because he left the company, or might have had a breach, or is on a 3-4 month break."
 
-*Coach-written at his request:* the old group is removed first to prevent privilege creep and keep least privilege.
+The old group is removed first to prevent privilege creep and keep least privilege.
 
-*Interview line (coach-written at his request, from his one-page IAM Labs doc):*
+*Interview line:*
 
 > "HR gives me one CSV, I run my joiner script, and every user is built the same way in a couple of minutes with fewer mistakes. My mover/leaver script takes the old group off first, adds the new one, and disables leavers, and I check every result in AD because the script can print 'Created' even when it failed."
 
