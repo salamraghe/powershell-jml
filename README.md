@@ -12,8 +12,6 @@ Three everyday access tickets: a joiner (new hire), a mover (role change) and a 
 
 ## What I learned
 
-In my own words:
-
 > "With a script, HR passes me a CSV once, I run it, and every user is built the same way without clicking, in a couple of minutes. It's faster, has fewer mistakes, and every user is set up the same way."
 
 > "My script moved Jane by taking her out of Finance, so no more access there, and putting her in her new role's Lab-Access-Group. For Mike, I took him out of Lab-Access-Group and disabled his account, because he left the company, or might have had a breach, or is on a 3-4 month break."
