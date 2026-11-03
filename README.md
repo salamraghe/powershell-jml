@@ -20,10 +20,6 @@ In my own words:
 
 The old group is removed first to prevent privilege creep and keep least privilege.
 
-*Interview line:*
-
-> "HR gives me one CSV, I run my joiner script, and every user is built the same way in a couple of minutes with fewer mistakes. My mover/leaver script takes the old group off first, adds the new one, and disables leavers, and I check every result in AD because the script can print 'Created' even when it failed."
-
 ## Key screenshots
 
 ![](key/01-joiners-csv.png)
